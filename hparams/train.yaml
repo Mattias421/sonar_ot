@@ -73,10 +73,14 @@ cfm: !new:torchcfm.conditional_flow_matching.ExactOptimalTransportConditionalFlo
 model_layers_per_block: 3
 model_norm_num_groups: 32
 model_downsample_each_block: true
+model_act_fn: silu
+model_block_out_channels: (64, 128, 256, 256)
 model: !new:model.UNetModelWrapper
     layers_per_block: !ref <model_layers_per_block>
     norm_num_groups: !ref <model_norm_num_groups>
     downsample_each_block: !ref <model_downsample_each_block>
+    act_fn: !ref <model_act_fn>
+    block_out_channels: !ref <model_block_out_channels>
 
 
 modules: 

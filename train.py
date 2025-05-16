@@ -189,7 +189,7 @@ def dataio_prepare(hparams, data_folder):
 if __name__ == "__main__":
     # Reading command line arguments
     with hp.hyperparameter_optimization(
-        objective_key="loss"
+        objective_key="cosdist"
     ) as hp_ctx:  # <-- Initialize the context
         hparams_file, run_opts, overrides = hp_ctx.parse_arguments(
             sys.argv[1:]
