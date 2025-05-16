@@ -1,0 +1,113 @@
+# Seed needs to be set at top of yaml, before objects with parameters are instantiated
+seed: 2602
+__set_seed: !apply:speechbrain.utils.seed_everything [!ref <seed>]
+
+# If you plan to train a system on an HPC cluster with a big dataset,
+# we strongly suggest doing the following:
+# 1- Compress the dataset in a single tar or zip file.
+# 2- Copy your dataset locally (i.e., the local disk of the computing node).
+# 3- Uncompress the dataset in the local folder.
+# 4- Set data_folder with the local path
+# Reading data from the local disk of the compute node (e.g. $SLURM_TMPDIR with SLURM-based clusters) is very important.
+# It allows you to read the data much faster without slowing down the shared filesystem.
+
+
+trial_id: train
+output_folder: !ref results/<trial_id>
+test_wer_file: !ref <output_folder>/wer_test.txt
+valid_wer_file: !ref <output_folder>/wer_valid.txt
+test_cer_file: !ref <output_folder>/cer_test.txt
+valid_cer_file: !ref <output_folder>/cer_valid.txt
+save_folder: !ref <output_folder>/save
+train_log: !ref <output_folder>/train_log.txt
+pred_outputs: !ref <output_folder>/x1_pred
+
+
+# Path where data manifest files will be stored. The data manifest files are created by the
+# data preparation script
+train_annotation: !ref <save_folder>/train.json
+valid_annotation: !ref <save_folder>/dev.json
+test_annotation: !ref <save_folder>/test.json
+
+#Optimal Number of Workers for Data Reading
+#The ideal value depends on your machine's hardware, such as the number of available CPUs.
+num_workers: 4
+batch_size: 16
+batch_size_test: 16
+number_of_epochs: 556
+scramble_train: false
+learning_rate: 0.0018
+weight_decay: 0.001
+
+validate_optim_metric: cosdist
+
+opt_class: !name:torch.optim.Adam # Or whatever optimizer you are using
+  lr: !ref <learning_rate>
+  weight_decay: !ref <weight_decay>
+
+# Dataloader options
+train_dataloader_opts:
+    batch_size: !ref <batch_size>
+    num_workers: !ref <num_workers>
+
+valid_dataloader_opts:
+    batch_size: !ref <batch_size>
+    num_workers: !ref <num_workers>
+
+test_dataloader_opts:
+    batch_size: !ref <batch_size_test>
+    num_workers: !ref <num_workers>
+
+
+# pipeline
+encoder: sonar_speech_encoder_spa
+lang_id_fleurs: "ca_es"
+
+cfm_sigma: 0.00
+cfm_ode_solver: euler
+cfm_n_ode_steps: 5
+# cfm: !new:torchcfm.conditional_flow_matching.ConditionalFlowMatcher
+cfm: !new:torchcfm.conditional_flow_matching.ExactOptimalTransportConditionalFlowMatcher
+    sigma: !ref <cfm_sigma>
+
+model_layers_per_block: 3
+model_norm_num_groups: 32
+model_downsample_each_block: true
+model: !new:model.UNetModelWrapper
+    layers_per_block: !ref <model_layers_per_block>
+    norm_num_groups: !ref <model_norm_num_groups>
+    downsample_each_block: !ref <model_downsample_each_block>
+
+
+modules: 
+  model: !ref <model>
+
+
+# Functions that compute the statistics to track during the validation step.
+cosim: !new:speechbrain.utils.metric_stats.MetricStats
+    metric: !name:torch.nn.functional.cosine_similarity
+l1_loss: !new:speechbrain.utils.metric_stats.MetricStats
+    metric: !name:speechbrain.nnet.losses.l1_loss
+
+checkpointer: !new:speechbrain.utils.checkpoints.Checkpointer
+    checkpoints_dir: !ref <save_folder>
+    recoverables:
+        model: !ref <model>
+        epoch_counter: !ref <epoch_counter>
+
+epoch_counter: !new:speechbrain.utils.epoch_loop.EpochCounterWithStopper
+    limit: !ref <number_of_epochs>
+    limit_to_stop: 30
+    limit_warmup: 1
+    direction: min
+
+# The train logger writes training statistics to a file, as well as stdout.
+train_logger: !new:speechbrain.utils.train_logger.FileTrainLogger
+    save_file: !ref <train_log>
+
+skip_prep: false
+
+hpopt_mode: null
+hpopt: null
+ckpt_enable: true
+evaluate: true
