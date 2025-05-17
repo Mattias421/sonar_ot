@@ -211,6 +211,11 @@ if __name__ == "__main__":
 
         data_folder = BASE_DATA_PATH / "fleurs" / hparams["lang_id_fleurs"]
 
+        if hparams["scramble_train"]:
+            scramble_config = {"embedding_type":"text_sonar_basic_encoder", "seed":hparams["seed"]}
+        else:
+            scramble_config = None
+
         # Data preparation, to be run on only one process.
         if not hparams["skip_prep"]:
             sb.utils.distributed.run_on_main(
@@ -220,6 +225,7 @@ if __name__ == "__main__":
                     "save_json_train": hparams["train_annotation"],
                     "save_json_valid": hparams["valid_annotation"],
                     "save_json_test": hparams["test_annotation"],
+                    "scramble_train_config": scramble_config
                 },
             )
         # We can now directly create the datasets for training, valid, and test

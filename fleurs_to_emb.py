@@ -183,7 +183,7 @@ def main():
                     torch.tensor(item["array"], dtype=torch.float32).unsqueeze(0)
                     for item in batch["audio"]
                 ]
-                embeddings = model.predict(audio_tensors).cpu()
+                embeddings = model.predict(audio_tensors, batch_size=4).cpu()
             except Exception as e:
                 print(
                     f"Error during speech embedding prediction for batch {batch_idx}: {e}"
