@@ -32,14 +32,14 @@ test_annotation: !ref <save_folder>/test.json
 #Optimal Number of Workers for Data Reading
 #The ideal value depends on your machine's hardware, such as the number of available CPUs.
 num_workers: 4
-batch_size: 16
+batch_size: 512
 batch_size_test: 16
 number_of_epochs: 556
 scramble_train: false
 learning_rate: 0.001
 weight_decay: 0.001
 
-validate_optim_metric: l1_loss
+validate_optim_metric: cosdist
 
 opt_class: !name:torch.optim.Adam # Or whatever optimizer you are using
   lr: !ref <learning_rate>
@@ -100,8 +100,8 @@ checkpointer: !new:speechbrain.utils.checkpoints.Checkpointer
 
 epoch_counter: !new:speechbrain.utils.epoch_loop.EpochCounterWithStopper
     limit: !ref <number_of_epochs>
-    limit_to_stop: 30
-    limit_warmup: 1
+    limit_to_stop: 10
+    limit_warmup: 20
     direction: min
 
 # The train logger writes training statistics to a file, as well as stdout.

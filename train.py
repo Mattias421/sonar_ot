@@ -8,7 +8,7 @@ from hyperpyyaml import load_hyperpyyaml
 from speechbrain.utils import hpopt as hp
 from speechbrain.utils.logger import get_logger
 from torchdyn.core import NeuralODE
-
+from torchcfm import ConditionalFlowMatcher as CFM
 from prepare_json import prepare_json
 
 logger = get_logger(__name__)
@@ -33,8 +33,10 @@ class ASR(sb.Brain):
         x0_speech = batch["speech_src"].data
         x1_text = batch["text"].data
 
-        t, xt, ut = self.hparams.cfm.sample_location_and_conditional_flow(
-            x0_speech, x1_text
+        x0, x1 = self.hparams.cfm.ot_sampler.sample_plan(x0_speech, x1_text, replace=False)
+
+        t, xt, ut = CFM.sample_location_and_conditional_flow(
+            self.hparams.cfm, x0, x1
         )
 
         vt = self.modules.model(t, xt)
@@ -189,7 +191,7 @@ def dataio_prepare(hparams, data_folder):
 if __name__ == "__main__":
     # Reading command line arguments
     with hp.hyperparameter_optimization(
-        objective_key="l1_loss"
+        objective_key="cosdist"
     ) as hp_ctx:  # <-- Initialize the context
         hparams_file, run_opts, overrides = hp_ctx.parse_arguments(
             sys.argv[1:]
